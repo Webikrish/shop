@@ -888,7 +888,7 @@ $conn->close();
                                         <th>Date</th>
                                         <th>Status</th>
                                         <th>Total</th>
-                                        <th>Action</th>
+                                        <!-- <th>Action</th> -->
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -904,12 +904,12 @@ $conn->close();
                                                 </span>
                                             </td>
                                             <td>₹<?php echo number_format($order['order_total'] ?? $order['total_amount'], 2); ?></td>
-                                            <td>
+                                            <!-- <td>
                                                 <button class="btn btn-outline btn-sm" 
-                                                        onclick="window.location.href='order-details.php?id=<?php echo $order['id']; ?>'">
+                                                        onclick="">
                                                     <i class="fas fa-eye"></i> View
                                                 </button>
-                                            </td>
+                                            </td> -->
                                         </tr>
                                     <?php endwhile; ?>
                                 </tbody>
@@ -936,29 +936,7 @@ $conn->close();
             <!-- Right Column: Quick Links and Password Change -->
             <div class="right-column">
                 <!-- Password Change -->
-                <div class="profile-section">
-                    <h2 class="section-title">Change Password</h2>
-                    <form method="POST" action="">
-                        <div class="form-group">
-                            <label class="form-label">Current Password</label>
-                            <input type="password" name="current_password" class="form-control" 
-                                   placeholder="Enter current password" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">New Password</label>
-                            <input type="password" name="new_password" class="form-control" 
-                                   placeholder="Enter new password" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Confirm New Password</label>
-                            <input type="password" name="confirm_password" class="form-control" 
-                                   placeholder="Confirm new password" required>
-                        </div>
-                        <button type="submit" name="change_password" class="btn btn-primary btn-block">
-                            <i class="fas fa-key"></i> Change Password
-                        </button>
-                    </form>
-                </div>
+                
 
                 <!-- Quick Links -->
                 <div class="quick-links">
@@ -982,18 +960,7 @@ $conn->close();
                                 <span>Shopping Cart</span>
                             </a>
                         </li>
-                        <li>
-                            <a href="addresses.php">
-                                <i class="fas fa-map-marker-alt"></i>
-                                <span>My Addresses</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="settings.php">
-                                <i class="fas fa-cog"></i>
-                                <span>Account Settings</span>
-                            </a>
-                        </li>
+                       
                         <li>
                             <a href="logout.php">
                                 <i class="fas fa-sign-out-alt"></i>

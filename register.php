@@ -398,7 +398,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <input type="checkbox" id="terms" name="terms" required>
                     <label for="terms">
                         I agree to the <a href="terms.php" target="_blank">Terms & Conditions</a> 
-                        and <a href="privacy.php" target="_blank">Privacy Policy</a>
+                        <!-- and <a href="privacy.php" target="_blank">Privacy Policy</a> -->
                     </label>
                 </div>
                 

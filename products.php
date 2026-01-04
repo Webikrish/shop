@@ -985,7 +985,7 @@ $totalPages = ceil($totalProducts / $limit);
                         <a href="login.php">Login</a>
                         <a href="register.php">Register</a>
                     <?php endif; ?>
-                    <a href="#">Track Order</a>
+                    
                     <a href="#">Help Center</a>
                 </div>
             </div>

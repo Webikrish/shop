@@ -633,7 +633,7 @@ if (isset($_SESSION['user_id'])) {
                         <a href="login.php"><i class="fas fa-sign-in-alt"></i> Login</a>
                         <a href="register.php"><i class="fas fa-user-plus"></i> Register</a>
                     <?php endif; ?>
-                    <a href="track-order.php"><i class="fas fa-truck"></i> Track Order</a>
+                    
                     <a href="help-center.php"><i class="fas fa-question-circle"></i> Help Center</a>
                 </div>
             </div>

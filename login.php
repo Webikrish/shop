@@ -269,13 +269,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </form>
             
             <div class="links">
-                <a href="forgot-password.php">Forgot Password?</a>
+                <!-- <a href="forgot-password.php">Forgot Password?</a> -->
                 <a href="register.php">Create New Account</a>
                 <a href="index.php">Back to Home</a>
             </div>
             
             <div class="form-footer">
-                <p>By logging in, you agree to our <a href="terms.php">Terms & Conditions</a> and <a href="privacy.php">Privacy Policy</a></p>
+                <p>By logging in, you agree to our <a href="terms.php">Terms & Conditions</a> </p>
             </div>
         </div>
     </div>

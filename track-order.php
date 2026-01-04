@@ -1,6 +1,11 @@
 <?php
 session_start();
-require_once 'config/database.php';
+
+// Database connection configuration
+$host = 'localhost';
+$username = 'root';  // Change if you have a different username
+$password = '';      // Change if you have a password
+$database = 'shopeasy'; // Change to your database name
 
 // Initialize variables
 $order = null;
@@ -9,6 +14,14 @@ $error = '';
 $success = '';
 $order_number = '';
 $email = '';
+
+// Create database connection
+$conn = new mysqli($host, $username, $password, $database);
+
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
 
 // Check if form is submitted
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
