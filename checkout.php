@@ -19,21 +19,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_address'])) {
     $errors = [];
     
     foreach ($required as $field) {
-        if (empty($_POST[$field])) {
+        if (empty(trim($_POST[$field]))) {
             $errors[] = ucfirst(str_replace('_', ' ', $field)) . " is required";
         }
     }
     
+    // Validate phone number
+    if (!empty($_POST['phone']) && !preg_match('/^[0-9]{10}$/', $_POST['phone'])) {
+        $errors[] = "Phone number must be 10 digits";
+    }
+    
+    // Validate ZIP code
+    if (!empty($_POST['zip_code']) && !preg_match('/^[0-9]{6}$/', $_POST['zip_code'])) {
+        $errors[] = "ZIP code must be 6 digits";
+    }
+    
     if (empty($errors)) {
-        // Store POST values in variables
-        $name = $_POST['name'];
-        $phone = $_POST['phone'];
-        $address_line1 = $_POST['address_line1'];
-        $address_line2 = isset($_POST['address_line2']) ? $_POST['address_line2'] : '';
-        $city = $_POST['city'];
-        $state = $_POST['state'];
-        $country = $_POST['country'];
-        $zip_code = $_POST['zip_code'];
+        // Sanitize and store POST values
+        $name = $conn->real_escape_string(trim($_POST['name']));
+        $phone = $conn->real_escape_string(trim($_POST['phone']));
+        $address_line1 = $conn->real_escape_string(trim($_POST['address_line1']));
+        $address_line2 = isset($_POST['address_line2']) ? $conn->real_escape_string(trim($_POST['address_line2'])) : '';
+        $city = $conn->real_escape_string(trim($_POST['city']));
+        $state = $conn->real_escape_string(trim($_POST['state']));
+        $country = $conn->real_escape_string(trim($_POST['country']));
+        $zip_code = $conn->real_escape_string(trim($_POST['zip_code']));
         $is_default = isset($_POST['is_default']) ? 1 : 0;
         
         // If setting as default, remove default from other addresses
@@ -42,6 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_address'])) {
             $update_stmt = $conn->prepare($update_sql);
             $update_stmt->bind_param("i", $user_id);
             $update_stmt->execute();
+            $update_stmt->close();
         }
         
         // Insert new address
@@ -70,6 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_address'])) {
         } else {
             $_SESSION['error_message'] = 'Failed to add address: ' . $conn->error;
         }
+        $stmt->close();
     } else {
         $_SESSION['error_message'] = implode('<br>', $errors);
     }
@@ -87,6 +99,7 @@ $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $user_result = $stmt->get_result();
 $user = $user_result->fetch_assoc();
+$stmt->close();
 
 // Get cart items for the user
 $cart_sql = "SELECT c.*, p.name, p.price, p.image_url, p.stock_quantity, 
@@ -113,6 +126,7 @@ while ($item = $cart_result->fetch_assoc()) {
         $has_out_of_stock = true;
     }
 }
+$stmt->close();
 
 // If cart is empty, redirect to cart page
 if (empty($cart_items)) {
@@ -136,6 +150,7 @@ $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $address_result = $stmt->get_result();
 $addresses = $address_result->fetch_all(MYSQLI_ASSOC);
+$stmt->close();
 
 // Handle order placement
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
@@ -156,12 +171,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
         
         try {
             // Get selected address
-            $address_id = $_POST['address_id'];
+            $address_id = intval($_POST['address_id']);
             $address_stmt = $conn->prepare("SELECT * FROM addresses WHERE id = ? AND user_id = ?");
             $address_stmt->bind_param("ii", $address_id, $user_id);
             $address_stmt->execute();
             $address_result = $address_stmt->get_result();
             $selected_address = $address_result->fetch_assoc();
+            $address_stmt->close();
             
             if (!$selected_address) {
                 throw new Exception("Invalid address selected");
@@ -187,8 +203,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                 'zip_code' => $selected_address['zip_code']
             ]);
             
-            $notes = isset($_POST['notes']) ? $_POST['notes'] : '';
-            $payment_method = $_POST['payment_method'];
+            $notes = isset($_POST['notes']) ? $conn->real_escape_string(trim($_POST['notes'])) : '';
+            $payment_method = $conn->real_escape_string($_POST['payment_method']);
             
             $order_stmt = $conn->prepare($order_sql);
             $order_stmt->bind_param("siddssss", 
@@ -207,6 +223,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
             }
             
             $order_id = $conn->insert_id;
+            $order_stmt->close();
             
             // Create order items and update product stock
             foreach ($cart_items as $item) {
@@ -227,6 +244,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                 if (!$order_item_stmt->execute()) {
                     throw new Exception("Failed to add order item: " . $conn->error);
                 }
+                $order_item_stmt->close();
                 
                 // Update product stock
                 $update_stock_sql = "UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?";
@@ -236,6 +254,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
                 if (!$update_stmt->execute()) {
                     throw new Exception("Failed to update product stock: " . $conn->error);
                 }
+                $update_stmt->close();
             }
             
             // Clear user's cart
@@ -246,6 +265,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
             if (!$clear_stmt->execute()) {
                 throw new Exception("Failed to clear cart: " . $conn->error);
             }
+            $clear_stmt->close();
             
             // Commit transaction
             $conn->commit();
@@ -283,6 +303,8 @@ $form_data = isset($_SESSION['form_data']) ? $_SESSION['form_data'] : [];
 unset($_SESSION['success_message']);
 unset($_SESSION['error_message']);
 unset($_SESSION['form_data']);
+
+$conn->close();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -1031,7 +1053,7 @@ unset($_SESSION['form_data']);
                     <div class="form-group">
                         <div class="radio-group">
                             <div class="radio-option">
-                                <input type="radio" id="cod" name="payment_method" value="cod" class="radio-input" required>
+                                <input type="radio" id="cod" name="payment_method" value="cod" class="radio-input" required <?php echo (empty($_POST['payment_method']) || $_POST['payment_method'] == 'cod') ? 'checked' : ''; ?>>
                                 <label for="cod" class="radio-label">
                                     <i class="fas fa-money-bill-wave radio-icon"></i>
                                     <div class="radio-text">Cash on Delivery</div>
@@ -1039,7 +1061,7 @@ unset($_SESSION['form_data']);
                             </div>
                             
                             <div class="radio-option">
-                                <input type="radio" id="card" name="payment_method" value="card" class="radio-input">
+                                <input type="radio" id="card" name="payment_method" value="card" class="radio-input" <?php echo (isset($_POST['payment_method']) && $_POST['payment_method'] == 'card') ? 'checked' : ''; ?>>
                                 <label for="card" class="radio-label">
                                     <i class="fas fa-credit-card radio-icon"></i>
                                     <div class="radio-text">Credit/Debit Card</div>
@@ -1047,7 +1069,7 @@ unset($_SESSION['form_data']);
                             </div>
                             
                             <div class="radio-option">
-                                <input type="radio" id="paypal" name="payment_method" value="paypal" class="radio-input">
+                                <input type="radio" id="paypal" name="payment_method" value="paypal" class="radio-input" <?php echo (isset($_POST['payment_method']) && $_POST['payment_method'] == 'paypal') ? 'checked' : ''; ?>>
                                 <label for="paypal" class="radio-label">
                                     <i class="fab fa-paypal radio-icon"></i>
                                     <div class="radio-text">PayPal</div>
@@ -1067,7 +1089,7 @@ unset($_SESSION['form_data']);
                     <div class="form-group">
                         <label for="notes" class="form-label">Order Notes (Optional)</label>
                         <textarea name="notes" id="notes" class="form-control" 
-                                  placeholder="Any special instructions for delivery..."></textarea>
+                                  placeholder="Any special instructions for delivery..."><?php echo isset($_POST['notes']) ? htmlspecialchars($_POST['notes']) : ''; ?></textarea>
                     </div>
                 </div>
                 
@@ -1154,7 +1176,8 @@ unset($_SESSION['form_data']);
                     <div class="form-group">
                         <label for="address-phone" class="form-label">Phone Number *</label>
                         <input type="tel" id="address-phone" name="phone" class="form-control" required
-                               value="<?php echo isset($form_data['phone']) ? htmlspecialchars($form_data['phone']) : ''; ?>">
+                               value="<?php echo isset($form_data['phone']) ? htmlspecialchars($form_data['phone']) : ''; ?>"
+                               pattern="[0-9]{10}" title="10 digit phone number">
                     </div>
                     
                     <div class="form-group">
@@ -1187,20 +1210,21 @@ unset($_SESSION['form_data']);
                         <div class="form-group">
                             <label for="address-zip" class="form-label">ZIP Code *</label>
                             <input type="text" id="address-zip" name="zip_code" class="form-control" required
-                                   value="<?php echo isset($form_data['zip_code']) ? htmlspecialchars($form_data['zip_code']) : ''; ?>">
+                                   value="<?php echo isset($form_data['zip_code']) ? htmlspecialchars($form_data['zip_code']) : ''; ?>"
+                                   pattern="[0-9]{6}" title="6 digit ZIP code">
                         </div>
                         
                         <div class="form-group">
                             <label for="address-country" class="form-label">Country *</label>
                             <input type="text" id="address-country" name="country" class="form-control" required
-                                   value="<?php echo isset($form_data['country']) ? htmlspecialchars($form_data['country']) : ''; ?>">
+                                   value="<?php echo isset($form_data['country']) ? htmlspecialchars($form_data['country']) : 'India'; ?>">
                         </div>
                     </div>
                     
                     <div class="form-group">
                         <label class="form-label">
                             <input type="checkbox" id="address-default" name="is_default" value="1"
-                                   <?php echo isset($form_data['is_default']) ? 'checked' : ''; ?>>
+                                   <?php echo isset($form_data['is_default']) ? 'checked' : (empty($addresses) ? 'checked' : ''); ?>>
                             Set as default address
                         </label>
                     </div>
@@ -1276,6 +1300,24 @@ unset($_SESSION['form_data']);
                 showAddressModal();
             });
         <?php endif; ?>
+        
+        // Initialize address selection
+        document.addEventListener('DOMContentLoaded', function() {
+            const defaultAddress = document.querySelector('.address-card.selected input[type="radio"]');
+            if (defaultAddress) {
+                defaultAddress.checked = true;
+            }
+            
+            // Set default payment method if not set
+            const paymentMethods = document.querySelectorAll('input[name="payment_method"]');
+            let hasSelected = false;
+            paymentMethods.forEach(method => {
+                if (method.checked) hasSelected = true;
+            });
+            if (!hasSelected && paymentMethods.length > 0) {
+                paymentMethods[0].checked = true;
+            }
+        });
     </script>
 </body>
 </html>
